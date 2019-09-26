@@ -3,8 +3,9 @@ var app = express();
 var bodyParser = require("body-parser");
 var mongoose = require("mongoose");
 var Campground = require("./models/campground");
-// var Comment = require("./models/user");
+var Comment = require("./models/comment");
 var seedDB = require("./seeds")
+
 
 seedDB();
 // const url = "mongodb+srv://Sungjae:1234@cluster0-p3kg2.mongodb.net/YelpCamp?retryWrites=true&w=majority";
@@ -13,33 +14,7 @@ seedDB();
 mongoose.connect("mongodb://localhost/YelpCamp_app");
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
-
-
-// Campground.create(
-//     {
-//         name: "camp1", 
-//         image: "http://www.sapminature.com/wp-content/uploads/2018/01/SapmiNatureCamp-3.jpg",
-//         description: "This is a huge granite hill, no bathrooms. No Water."
-//     }, function(err, campground){
-//         if(err) {
-//             console.log(err);
-//         }else {
-//             console.log("NEWLY CREATED CAMPGROUND: ");
-//             console.log(campground);
-//         }
-//     });
-
-// campgrounds =[
-//     {name:"camp1", image:"http://www.sapminature.com/wp-content/uploads/2018/01/SapmiNatureCamp-3.jpg"},
-//     {name:"camp2", image:"https://typewriter.imgix.net/u/54915065-8596-4c29-bb7a-e6320dbb9698/p/35470/tour-camp-highlander-summer-camp-for-boys-and-girls.jpg?ixlib=rails-2.1.4&auto=format%2Ccompress&crop=faces&fit=crop&w=1000"},
-//     {name:"camp3", image:"https://www.asiliaafrica.com/wp-content/uploads/2018/07/Olakira-Star-gazing-tent-under-the-milkyway.jpg"},
-//     {name:"camp1", image:"http://www.sapminature.com/wp-content/uploads/2018/01/SapmiNatureCamp-3.jpg"},
-//     {name:"camp2", image:"https://typewriter.imgix.net/u/54915065-8596-4c29-bb7a-e6320dbb9698/p/35470/tour-camp-highlander-summer-camp-for-boys-and-girls.jpg?ixlib=rails-2.1.4&auto=format%2Ccompress&crop=faces&fit=crop&w=1000"},
-//     {name:"camp3", image:"https://www.asiliaafrica.com/wp-content/uploads/2018/07/Olakira-Star-gazing-tent-under-the-milkyway.jpg"},
-//     {name:"camp1", image:"http://www.sapminature.com/wp-content/uploads/2018/01/SapmiNatureCamp-3.jpg"},
-//     {name:"camp2", image:"https://typewriter.imgix.net/u/54915065-8596-4c29-bb7a-e6320dbb9698/p/35470/tour-camp-highlander-summer-camp-for-boys-and-girls.jpg?ixlib=rails-2.1.4&auto=format%2Ccompress&crop=faces&fit=crop&w=1000"},
-//     {name:"camp3", image:"https://www.asiliaafrica.com/wp-content/uploads/2018/07/Olakira-Star-gazing-tent-under-the-milkyway.jpg"}
-// ];
+app.use(express.static(__dirname + "/public"));
 
 app.get("/", function(req, res){
     res.render("landing");
@@ -51,7 +26,7 @@ app.get("/campgrounds", function(req, res){
         if(err) {
             console.log(err);
         }else {
-            res.render("index", {campgrounds: allCampgrounds})
+            res.render("campgrounds/index", {campgrounds: allCampgrounds})
         }
     });
 });
@@ -75,20 +50,59 @@ app.post("/campgrounds", function(req, res) {
 
 //NEW - show form to create new campground
 app.get("/campgrounds/new", function(req, res){
-    res.render("new");
+    res.render("campgrounds/new");
 });
 
 //SHOW - show more info about one campground
 app.get("/campgrounds/:id", function(req, res){
     //find the campground with provided ID
-    Campground.findById(req.params.id, function(err, foundCampground){
+    Campground.findById(req.params.id).populate("comments").exec(function(err, foundCampground){
         if(err){
             console.log(err);
         }else {
-            res.render("show", {campground: foundCampground});
+            res.render("campgrounds/show", {campground: foundCampground});
         }
     });
 })
+
+// ==========================================
+// COMMNET ROUTES
+// ==========================================
+
+
+app.get("/campgrounds/:id/comments/new", function(req, res){
+    // find campground by id
+    Campground.findById(req.params.id, function(err, campground){
+        if(err) {
+            console.log(err);
+        } else {
+            res.render("comments/new", {campground: campground});
+        }
+    })
+})
+
+app.post("/campgrounds/:id/comments", function(req, res){
+    // lookup campground using ID
+    Campground.findById(req.params.id, function(err, campground){
+        if(err) {
+            console.log(err);
+            res.redirect("/campgrounds")
+        } else {
+            Comment.create(req.body.comment, function(err, comment){
+                if(err){
+                    console.log(err);
+                } else{
+                    campground.comments.push(comment);
+                    campground.save();
+                    res.redirect('/campgrounds/' + campground._id);
+                }
+            })
+        }
+    }
+    // create new comment
+    // connect new comment to campground
+    // redirect campground show page
+)})
 
 app.listen(3000, function(){
     console.log("YelpCamp server has started!!!");
