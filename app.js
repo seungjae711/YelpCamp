@@ -2,21 +2,18 @@ var express = require("express");
 var app = express();
 var bodyParser = require("body-parser");
 var mongoose = require("mongoose");
+var Campground = require("./models/campground");
+// var Comment = require("./models/user");
+var seedDB = require("./seeds")
 
-const url = "mongodb+srv://Sungjae:1234@cluster0-p3kg2.mongodb.net/YelpCamp?retryWrites=true&w=majority";
-mongoose.connect(url, { useNewUrlParser: true });
+seedDB();
+// const url = "mongodb+srv://Sungjae:1234@cluster0-p3kg2.mongodb.net/YelpCamp?retryWrites=true&w=majority";
+// mongoose.connect(url, { useNewUrlParser: true });
 
+mongoose.connect("mongodb://localhost/YelpCamp_app");
 app.use(bodyParser.urlencoded({extended: true}));
 app.set("view engine", "ejs");
 
-//SCHEMA SET
-var campgroundSchema = new mongoose.Schema({
-    name: String,
-    image: String,
-    description: String
-});
-
-var Campground = mongoose.model("Campground", campgroundSchema);
 
 // Campground.create(
 //     {
@@ -65,7 +62,7 @@ app.post("/campgrounds", function(req, res) {
     var name = req.body.name;
     var image = req.body.image;
     var description = req.body.description
-    var newCampground = {name: name, image: image, description:description};
+    var newCampground = {name: name, image: image, description: description};
     // Create a new campground and save to DB
     Campground.create(newCampground, function(err, newlyCreated){
         if(err) {
@@ -75,7 +72,6 @@ app.post("/campgrounds", function(req, res) {
         }
     })
 });
-
 
 //NEW - show form to create new campground
 app.get("/campgrounds/new", function(req, res){
